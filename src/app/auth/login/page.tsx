@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -14,14 +14,14 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect") || "/";
-  const supabase = createClient();
+  const supabaseRef = useRef(createClient());
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    const { error: authError } = await supabase.auth.signInWithPassword({
+    const { error: authError } = await supabaseRef.current.auth.signInWithPassword({
       email,
       password
     });
@@ -37,7 +37,7 @@ function LoginForm() {
   };
 
   const handleOAuth = async (provider: "google" | "apple") => {
-    await supabase.auth.signInWithOAuth({
+    await supabaseRef.current.auth.signInWithOAuth({
       provider,
       options: {
         redirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirect)}`

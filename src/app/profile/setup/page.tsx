@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -15,7 +15,7 @@ export default function ProfileSetupPage() {
   const router = useRouter();
   const { user, refreshProfile } = useAuth();
   const { showToast } = useToast();
-  const supabase = createClient();
+  const supabaseRef = useRef(createClient());
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +37,7 @@ export default function ProfileSetupPage() {
     }
 
     // Check if username is taken
-    const { data: existing } = await supabase
+    const { data: existing } = await supabaseRef.current
       .from('profiles')
       .select('id')
       .eq('username', sanitized)
@@ -49,7 +49,7 @@ export default function ProfileSetupPage() {
       return;
     }
 
-    const { error: upsertError } = await supabase.from('profiles').upsert({
+    const { error: upsertError } = await supabaseRef.current.from('profiles').upsert({
       id: user?.id,
       username: sanitized,
       display_name: displayName || user?.user_metadata?.display_name || sanitized,

@@ -233,17 +233,24 @@ export default function TimelinePage({
     showToast('Photo uploaded!', 'success');
   };
 
+  const extractStoragePath = (url: string): string => {
+    const marker = '/object/public/photos/';
+    const idx = url.indexOf(marker);
+    return idx !== -1 ? url.slice(idx + marker.length) : url;
+  };
+
   const handleDeletePhoto = async (photoId: string) => {
     const supabase = supabaseRef.current;
     const photo = photos.find((p) => p.id === photoId);
     if (!photo) {return;}
 
-    // Delete from storage
-    if (photo.storage_path) {
-      await supabase.storage.from('photos').remove([photo.storage_path]);
-    }
-    if (photo.thumbnail_path) {
-      await supabase.storage.from('photos').remove([photo.thumbnail_path]);
+    // Delete from storage (extract relative path from full public URL)
+    const pathsToRemove = [photo.storage_path, photo.thumbnail_path]
+      .filter(Boolean)
+      .map((url) => extractStoragePath(url as string));
+
+    if (pathsToRemove.length) {
+      await supabase.storage.from('photos').remove(pathsToRemove);
     }
 
     // Delete from database

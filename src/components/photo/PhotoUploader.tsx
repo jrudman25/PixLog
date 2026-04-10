@@ -175,14 +175,18 @@ export default function PhotoUploader({
 
     setUploading(false);
 
-    const allDone = items.every(
-      (it) => it.status === 'done' || it.status === 'error'
-    );
-    if (allDone) {
-      setTimeout(() => {
-        onUploaded();
-      }, 500);
-    }
+    // Check completion using functional setState to read latest state
+    setItems((current) => {
+      const allDone = current.every(
+        (it) => it.status === 'done' || it.status === 'error'
+      );
+      if (allDone) {
+        setTimeout(() => {
+          onUploaded();
+        }, 500);
+      }
+      return current;
+    });
   };
 
   return (

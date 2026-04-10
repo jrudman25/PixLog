@@ -16,17 +16,17 @@ A collaborative, mobile-first photo timeline app. Create shared timelines, invit
 
 ## Tech Stack
 
-| Layer | Technology | Why |
-|-------|-----------|-----|
-| **Framework** | [Next.js 16](https://nextjs.org/) (App Router) | Server-first rendering, file-based routing, built-in image optimization |
-| **UI** | [React 19](https://react.dev/) + TypeScript | Concurrent features, type safety |
-| **Styling** | Vanilla CSS (custom properties) | Full control, zero runtime overhead, no class-name collisions via CSS Modules |
-| **Database** | [Supabase](https://supabase.com/) (Postgres) | Row-Level Security, auto-generated REST API, real-time subscriptions |
-| **Auth** | Supabase Auth | Email/password + OAuth (Google, Apple), session management via `@supabase/ssr` |
-| **Storage** | Supabase Storage | Direct upload from browser, public CDN URLs, bucket-level access policies |
-| **Real-time** | Supabase Realtime | Postgres Change Data Capture over WebSocket, zero config |
-| **EXIF** | [exifr](https://github.com/nickel-fang/exifr) | Lightweight client-side EXIF parser for date, GPS, dimensions |
-| **Geocoding** | [OpenStreetMap Nominatim](https://nominatim.org/) | Free reverse geocoding — GPS coords to human-readable location |
+| Layer         | Technology                                        | Why                                                                            |
+| ------------- | ------------------------------------------------- | ------------------------------------------------------------------------------ |
+| **Framework** | [Next.js 16](https://nextjs.org/) (App Router)    | Server-first rendering, file-based routing, built-in image optimization        |
+| **UI**        | [React 19](https://react.dev/) + TypeScript       | Concurrent features, type safety                                               |
+| **Styling**   | Vanilla CSS (custom properties)                   | Full control, zero runtime overhead, no class-name collisions via CSS Modules  |
+| **Database**  | [Supabase](https://supabase.com/) (Postgres)      | Row-Level Security, auto-generated REST API, real-time subscriptions           |
+| **Auth**      | Supabase Auth                                     | Email/password + OAuth (Google, Apple), session management via `@supabase/ssr` |
+| **Storage**   | Supabase Storage                                  | Direct upload from browser, public CDN URLs, bucket-level access policies      |
+| **Real-time** | Supabase Realtime                                 | Postgres Change Data Capture over WebSocket, zero config                       |
+| **EXIF**      | [exifr](https://github.com/nickel-fang/exifr)     | Lightweight client-side EXIF parser for date, GPS, dimensions                  |
+| **Geocoding** | [OpenStreetMap Nominatim](https://nominatim.org/) | Free reverse geocoding — GPS coords to human-readable location                 |
 
 ## Architecture
 
@@ -48,7 +48,7 @@ User uploads photo
 ```
 Login/Signup → Supabase Auth (email or OAuth)
   → Auth callback exchanges code for session
-  → Middleware refreshes session on every request
+  → Proxy refreshes session on every request
   → Auth context provides user/profile to all client components
   → Protected routes redirect unauthenticated users
 ```
@@ -93,7 +93,7 @@ src/
 │   ├── exif.ts             # EXIF extraction + Canvas thumbnails
 │   ├── geocode.ts          # Rate-limited Nominatim reverse geocoding
 │   └── utils.ts            # Date formatting, invite codes, initials
-├── middleware.ts            # Session refresh + route protection
+├── proxy.ts            # Session refresh + route protection
 └── types/                  # Shared TypeScript interfaces
 ```
 
@@ -104,3 +104,4 @@ src/
 - **EXIF thumbnails**: Client-side Canvas API generates 600px WebP blobs before upload, avoiding server-side processing
 - **Real-time**: Supabase `postgres_changes` channel subscriptions on `photos` and `comments` tables auto-update the UI
 - **PWA install**: `useSyncExternalStore` reads `display-mode: standalone` media query without triggering cascading renders
+

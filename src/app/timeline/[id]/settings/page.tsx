@@ -23,6 +23,7 @@ export default function TimelineSettingsPage({
   const [searchResults, setSearchResults] = useState<Profile[]>([]);
   const [searching, setSearching] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [origin, setOrigin] = useState('');
   const router = useRouter();
   const { user } = useAuth();
   const { showToast } = useToast();
@@ -33,6 +34,10 @@ export default function TimelineSettingsPage({
   useEffect(() => {
     paramsPromise.then(setParams);
   }, [paramsPromise]);
+
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
 
   useEffect(() => {
     if (!params) {return;}
@@ -85,7 +90,7 @@ export default function TimelineSettingsPage({
 
   const copyInviteLink = () => {
     if (!timeline) {return;}
-    const link = `${window.location.origin}/invite/${timeline.invite_code}`;
+    const link = `${origin}/invite/${timeline.invite_code}`;
     navigator.clipboard.writeText(link);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -204,9 +209,14 @@ export default function TimelineSettingsPage({
     if (photos) {
       const paths = photos.flatMap((p) =>
         [p.storage_path, p.thumbnail_path].filter(Boolean)
-      );
+      ).map((url) => {
+        // storage_path stores full public URLs; extract relative bucket path
+        const marker = '/object/public/photos/';
+        const idx = (url as string).indexOf(marker);
+        return idx !== -1 ? (url as string).slice(idx + marker.length) : url as string;
+      });
       if (paths.length) {
-        await supabase.storage.from('photos').remove(paths as string[]);
+        await supabase.storage.from('photos').remove(paths);
       }
     }
 
@@ -254,7 +264,7 @@ export default function TimelineSettingsPage({
           <div className={styles.inviteLink}>
             <div className={styles.linkBox}>
               <code className={styles.code}>
-                {window.location.origin}/invite/{timeline.invite_code}
+                {origin}/invite/{timeline.invite_code}
               </code>
             </div>
             <button
