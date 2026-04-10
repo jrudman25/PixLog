@@ -1,0 +1,80 @@
+.loadingContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60dvh;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.timelineTitle {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.timelineMeta {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+}
+
+.uploadBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: var(--accent-subtle);
+  color: var(--accent-text);
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  font-size: var(--text-sm);
+  transition: all var(--transition-fast);
+  margin-bottom: var(--space-4);
+  border: 1px dashed var(--accent);
+  border-style: dashed;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.uploadBtn:hover {
+  background: var(--accent);
+  color: white;
+  border-style: solid;
+}
+
+.uploadBtn:active {
+  transform: scale(0.98);
+}
+
+.feed {
+  animation: fadeIn var(--transition-base) ease-out;
+}
+
+.dateGroup {
+  margin-bottom: var(--space-2);
+}
+
+.photoGrid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.loadMore {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8) 0;
+}
