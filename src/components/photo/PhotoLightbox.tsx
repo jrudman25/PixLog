@@ -11,20 +11,17 @@ import styles from './PhotoLightbox.module.css';
 
 interface PhotoLightboxProps {
   photo: Photo;
-  timelineId: string;
   onClose: () => void;
-  onDelete: (photoId: string) => void;
+  onDelete: (_photoId: string) => void;
   canDelete: boolean;
 }
 
 export default function PhotoLightbox({
   photo,
-  timelineId,
   onClose,
   onDelete,
   canDelete,
 }: PhotoLightboxProps) {
-  const [showMeta, setShowMeta] = useState(false);
   const [editing, setEditing] = useState(false);
   const [takenAt, setTakenAt] = useState(
     new Date(photo.taken_at).toISOString().slice(0, 16)

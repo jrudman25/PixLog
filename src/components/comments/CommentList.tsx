@@ -74,7 +74,7 @@ export default function CommentList({ photoId }: CommentListProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !newComment.trim()) return;
+    if (!user || !newComment.trim()) {return;}
 
     setSubmitting(true);
 

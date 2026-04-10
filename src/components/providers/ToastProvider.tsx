@@ -16,8 +16,8 @@ interface ToastContextType {
 
 const ToastContext = createContext<ToastContextType>({
   toasts: [],
-  showToast: () => {},
-  dismissToast: () => {},
+  showToast: (_message: string, _type?: Toast['type']) => {},
+  dismissToast: (_id: string) => {},
 });
 
 export function useToast() {

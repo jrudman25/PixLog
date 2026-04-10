@@ -1,25 +1,35 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useSyncExternalStore } from 'react';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
+// Check standalone display mode outside of effects
+function getIsStandalone() {
+  if (typeof window === 'undefined') {return false;}
+  return window.matchMedia('(display-mode: standalone)').matches;
+}
+
+function subscribeToStandalone(callback: () => void) {
+  const mql = window.matchMedia('(display-mode: standalone)');
+  mql.addEventListener('change', callback);
+  return () => mql.removeEventListener('change', callback);
+}
+
 export function useInstallPrompt() {
+  const isStandalone = useSyncExternalStore(
+    subscribeToStandalone,
+    getIsStandalone,
+    () => false
+  );
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
-  const [isInstalled, setIsInstalled] = useState(false);
   const [isInstallable, setIsInstallable] = useState(false);
 
   useEffect(() => {
-    // Check if already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setIsInstalled(true);
-      return;
-    }
-
     const handleBeforeInstall = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
@@ -27,7 +37,6 @@ export function useInstallPrompt() {
     };
 
     const handleAppInstalled = () => {
-      setIsInstalled(true);
       setIsInstallable(false);
       setDeferredPrompt(null);
     };
@@ -42,7 +51,7 @@ export function useInstallPrompt() {
   }, []);
 
   const install = async () => {
-    if (!deferredPrompt) return false;
+    if (!deferredPrompt) {return false;}
 
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
@@ -53,5 +62,5 @@ export function useInstallPrompt() {
     return outcome === 'accepted';
   };
 
-  return { isInstallable, isInstalled, install };
+  return { isInstallable, isInstalled: isStandalone, install };
 }

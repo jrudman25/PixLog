@@ -41,10 +41,10 @@ export function formatRelativeTime(dateStr: string): string {
   const hours = Math.floor(minutes / 60);
   const days = Math.floor(hours / 24);
 
-  if (seconds < 60) return 'just now';
-  if (minutes < 60) return `${minutes}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days < 7) return `${days}d ago`;
+  if (seconds < 60) {return 'just now';}
+  if (minutes < 60) {return `${minutes}m ago`;}
+  if (hours < 24) {return `${hours}h ago`;}
+  if (days < 7) {return `${days}d ago`;}
   return formatDateShort(dateStr);
 }
 
@@ -56,9 +56,9 @@ export function getDateGroup(dateStr: string): string {
   const diff = today.getTime() - dateDay.getTime();
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-  if (days === 0) return 'Today';
-  if (days === 1) return 'Yesterday';
-  if (days < 7) return date.toLocaleDateString('en-US', { weekday: 'long' });
+  if (days === 0) {return 'Today';}
+  if (days === 1) {return 'Yesterday';}
+  if (days < 7) {return date.toLocaleDateString('en-US', { weekday: 'long' });}
 
   return date.toLocaleDateString('en-US', {
     month: 'long',

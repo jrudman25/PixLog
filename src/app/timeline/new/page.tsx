@@ -20,7 +20,7 @@ export default function NewTimelinePage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user) {return;}
     setLoading(true);
 
     const inviteCode = generateInviteCode();

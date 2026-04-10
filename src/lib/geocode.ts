@@ -31,12 +31,12 @@ export async function reverseGeocode(
     const url = `${NOMINATIM_URL}?format=json&lat=${lat}&lon=${lon}&zoom=14&addressdetails=1`;
     const response = await rateLimitedFetch(url);
 
-    if (!response.ok) return null;
+    if (!response.ok) {return null;}
 
     const data = await response.json();
     const address = data.address;
 
-    if (!address) return null;
+    if (!address) {return null;}
 
     const city =
       address.city ||

@@ -18,7 +18,7 @@ export default function HomePage() {
   const supabaseRef = useRef(createClient());
 
   useEffect(() => {
-    if (loading) return;
+    if (loading) {return;}
     if (!user) {
       router.push('/auth/login');
       return;

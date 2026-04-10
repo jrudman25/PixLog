@@ -3,7 +3,6 @@
 import { useState, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { useToast } from '@/components/providers/ToastProvider';
 import { extractExif, generateThumbnail } from '@/lib/exif';
 import { reverseGeocode } from '@/lib/geocode';
 import styles from './PhotoUploader.module.css';
@@ -31,7 +30,6 @@ export default function PhotoUploader({
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
-  const { showToast } = useToast();
   const supabase = createClient();
 
   const handleFiles = (files: FileList) => {
@@ -55,12 +53,12 @@ export default function PhotoUploader({
   };
 
   const uploadAll = async () => {
-    if (!user || items.length === 0) return;
+    if (!user || items.length === 0) {return;}
     setUploading(true);
 
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
-      if (item.status === 'done') continue;
+      if (item.status === 'done') {continue;}
 
       setItems((prev) =>
         prev.map((it, idx) =>
@@ -96,7 +94,7 @@ export default function PhotoUploader({
         let locationName: string | null = null;
         if (exif.latitude && exif.longitude) {
           const geo = await reverseGeocode(exif.latitude, exif.longitude);
-          if (geo) locationName = geo.locationName;
+          if (geo) {locationName = geo.locationName;}
         }
 
         // Upload original
@@ -110,7 +108,7 @@ export default function PhotoUploader({
             contentType: item.file.type,
           });
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {throw uploadError;}
 
         setItems((prev) =>
           prev.map((it, idx) =>
@@ -155,7 +153,7 @@ export default function PhotoUploader({
           height: exif.height || 0,
         });
 
-        if (insertError) throw insertError;
+        if (insertError) {throw insertError;}
 
         setItems((prev) =>
           prev.map((it, idx) =>
@@ -210,7 +208,7 @@ export default function PhotoUploader({
             onDrop={(e) => {
               e.preventDefault();
               e.currentTarget.classList.remove(styles.dragOver);
-              if (e.dataTransfer.files) handleFiles(e.dataTransfer.files);
+              if (e.dataTransfer.files) {handleFiles(e.dataTransfer.files);}
             }}
           >
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.4">
@@ -230,7 +228,7 @@ export default function PhotoUploader({
               accept="image/*"
               multiple
               onChange={(e) => {
-                if (e.target.files) handleFiles(e.target.files);
+                if (e.target.files) {handleFiles(e.target.files);}
               }}
               className="sr-only"
               id="photo-file-input"

@@ -27,7 +27,7 @@ export default function InvitePage({
   }, [paramsPromise]);
 
   useEffect(() => {
-    if (!params) return;
+    if (!params) {return;}
 
     if (!user) {
       router.push(`/auth/login?redirect=/invite/${params.code}`);
@@ -75,7 +75,7 @@ export default function InvitePage({
   }, [params, user, profile, router]);
 
   const handleJoin = async () => {
-    if (!params || !user) return;
+    if (!params || !user) {return;}
     setJoining(true);
 
     const supabase = supabaseRef.current;

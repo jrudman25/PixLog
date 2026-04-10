@@ -9,7 +9,7 @@ export default function BottomNav() {
   const pathname = usePathname();
   const { user } = useAuth();
 
-  if (!user) return null;
+  if (!user) {return null;}
 
   const links = [
     {

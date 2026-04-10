@@ -1,11 +1,11 @@
 -- PixLog Database Schema
--- Run this in Supabase SQL Editor to set up all tables and policies
+-- Run this in Supabase SQL Editor to set up all tables, policies, and triggers.
 
 -- Enable UUID extension if not already enabled
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ============================================================
--- 1. CREATE ALL TABLES FIRST (no cross-references in policies)
+-- 1. TABLES
 -- ============================================================
 
 -- PROFILES
@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS public.comments (
 CREATE INDEX IF NOT EXISTS idx_photos_timeline_taken ON public.photos(timeline_id, taken_at DESC);
 
 -- ============================================================
--- 2. ENABLE RLS ON ALL TABLES
+-- 2. ENABLE RLS
 -- ============================================================
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
@@ -82,10 +82,25 @@ ALTER TABLE public.photos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.comments ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================
--- 3. POLICIES (all tables exist now, safe to cross-reference)
+-- 3. HELPER FUNCTIONS (must be created before policies)
 -- ============================================================
 
--- PROFILES policies
+-- SECURITY DEFINER function to check timeline membership without
+-- triggering recursive RLS on the timeline_members table itself.
+CREATE OR REPLACE FUNCTION public.is_timeline_member(check_timeline_id UUID, check_user_id UUID)
+RETURNS BOOLEAN AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.timeline_members
+    WHERE timeline_id = check_timeline_id
+      AND user_id = check_user_id
+  );
+$$ LANGUAGE sql SECURITY DEFINER;
+
+-- ============================================================
+-- 4. RLS POLICIES
+-- ============================================================
+
+-- PROFILES: anyone can read, users can insert/update their own
 CREATE POLICY "profiles_select_all" ON public.profiles
   FOR SELECT USING (true);
 
@@ -95,8 +110,8 @@ CREATE POLICY "profiles_insert_own" ON public.profiles
 CREATE POLICY "profiles_update_own" ON public.profiles
   FOR UPDATE USING (auth.uid() = id);
 
--- TIMELINES policies
-CREATE POLICY "timelines_select_by_invite" ON public.timelines
+-- TIMELINES: anyone can read (needed for invite lookup), creator manages
+CREATE POLICY "timelines_select" ON public.timelines
   FOR SELECT USING (true);
 
 CREATE POLICY "timelines_insert_auth" ON public.timelines
@@ -108,15 +123,11 @@ CREATE POLICY "timelines_update_creator" ON public.timelines
 CREATE POLICY "timelines_delete_creator" ON public.timelines
   FOR DELETE USING (auth.uid() = created_by);
 
--- TIMELINE MEMBERS policies
-CREATE POLICY "members_select_own_timelines" ON public.timeline_members
+-- TIMELINE MEMBERS: see own + fellow members (via helper function)
+CREATE POLICY "members_select" ON public.timeline_members
   FOR SELECT USING (
     user_id = auth.uid() OR
-    EXISTS (
-      SELECT 1 FROM public.timeline_members AS m
-      WHERE m.timeline_id = timeline_members.timeline_id
-        AND m.user_id = auth.uid()
-    )
+    public.is_timeline_member(timeline_id, auth.uid())
   );
 
 CREATE POLICY "members_insert" ON public.timeline_members
@@ -139,7 +150,7 @@ CREATE POLICY "members_delete_self_or_creator" ON public.timeline_members
     )
   );
 
--- PHOTOS policies
+-- PHOTOS: only timeline members can read/insert, uploader or creator can delete
 CREATE POLICY "photos_select_members" ON public.photos
   FOR SELECT USING (
     EXISTS (
@@ -172,7 +183,7 @@ CREATE POLICY "photos_delete_uploader_or_creator" ON public.photos
     )
   );
 
--- COMMENTS policies
+-- COMMENTS: only timeline members can read/insert, author can update/delete
 CREATE POLICY "comments_select_members" ON public.comments
   FOR SELECT USING (
     EXISTS (
@@ -201,7 +212,7 @@ CREATE POLICY "comments_delete_author" ON public.comments
   FOR DELETE USING (auth.uid() = user_id);
 
 -- ============================================================
--- 4. TRIGGER: Auto-create profile on signup
+-- 5. TRIGGER: Auto-create profile on signup
 -- ============================================================
 
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -225,13 +236,8 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- ============================================================
--- 5. REALTIME
+-- 6. REALTIME
 -- ============================================================
 
 ALTER PUBLICATION supabase_realtime ADD TABLE public.photos;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.comments;
-
--- ============================================================
--- 6. STORAGE (run separately if this errors)
--- ============================================================
--- INSERT INTO storage.buckets (id, name, public) VALUES ('photos', 'photos', true);

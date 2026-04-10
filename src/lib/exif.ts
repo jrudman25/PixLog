@@ -8,6 +8,23 @@ export interface ExifData {
   height: number | null;
 }
 
+    function getImageDimensions(
+  file: File
+): Promise<{ width: number; height: number }> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      resolve({ width: img.naturalWidth, height: img.naturalHeight });
+      URL.revokeObjectURL(img.src);
+    };
+    img.onerror = () => {
+      resolve({ width: 0, height: 0 });
+      URL.revokeObjectURL(img.src);
+    };
+    img.src = URL.createObjectURL(file);
+  });
+}
+
 export async function extractExif(file: File): Promise<ExifData> {
   try {
     const exif = await exifr.parse(file, {
@@ -68,23 +85,6 @@ export async function extractExif(file: File): Promise<ExifData> {
   }
 }
 
-function getImageDimensions(
-  file: File
-): Promise<{ width: number; height: number }> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      resolve({ width: img.naturalWidth, height: img.naturalHeight });
-      URL.revokeObjectURL(img.src);
-    };
-    img.onerror = () => {
-      resolve({ width: 0, height: 0 });
-      URL.revokeObjectURL(img.src);
-    };
-    img.src = URL.createObjectURL(file);
-  });
-}
-
 export async function generateThumbnail(
   file: File,
   maxWidth = 600
@@ -106,8 +106,8 @@ export async function generateThumbnail(
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       canvas.toBlob(
         (blob) => {
-          if (blob) resolve(blob);
-          else reject(new Error('Could not generate thumbnail'));
+          if (blob) {resolve(blob);}
+          else {reject(new Error('Could not generate thumbnail'));}
         },
         'image/webp',
         0.8

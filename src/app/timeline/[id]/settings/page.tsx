@@ -35,7 +35,7 @@ export default function TimelineSettingsPage({
   }, [paramsPromise]);
 
   useEffect(() => {
-    if (!params) return;
+    if (!params) {return;}
     const supabase = supabaseRef.current;
 
     const load = async () => {
@@ -84,7 +84,7 @@ export default function TimelineSettingsPage({
   }, [params, router]);
 
   const copyInviteLink = () => {
-    if (!timeline) return;
+    if (!timeline) {return;}
     const link = `${window.location.origin}/invite/${timeline.invite_code}`;
     navigator.clipboard.writeText(link);
     setCopied(true);
@@ -92,7 +92,7 @@ export default function TimelineSettingsPage({
   };
 
   const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
+    if (!searchQuery.trim()) {return;}
     setSearching(true);
 
     const { data } = await supabaseRef.current
@@ -110,7 +110,7 @@ export default function TimelineSettingsPage({
   };
 
   const addMember = async (profileId: string) => {
-    if (!params) return;
+    if (!params) {return;}
     const supabase = supabaseRef.current;
 
     const { error } = await supabase.from('timeline_members').insert({
@@ -171,13 +171,13 @@ export default function TimelineSettingsPage({
   };
 
   const leaveTimeline = async () => {
-    if (!params || !user) return;
+    if (!params || !user) {return;}
     if (isCreator) {
       showToast('Creator cannot leave. Delete the timeline instead.', 'error');
       return;
     }
 
-    if (!confirm('Leave this timeline?')) return;
+    if (!confirm('Leave this timeline?')) {return;}
 
     await supabaseRef.current
       .from('timeline_members')
@@ -190,9 +190,9 @@ export default function TimelineSettingsPage({
   };
 
   const deleteTimeline = async () => {
-    if (!params || !isCreator) return;
+    if (!params || !isCreator) {return;}
     if (!confirm('Delete this timeline? All photos and comments will be permanently removed.'))
-      return;
+      {return;}
     const supabase = supabaseRef.current;
 
     // Delete all photos from storage
@@ -228,7 +228,7 @@ export default function TimelineSettingsPage({
     );
   }
 
-  if (!timeline) return null;
+  if (!timeline) {return null;}
 
   return (
     <>

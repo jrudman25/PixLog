@@ -8,7 +8,7 @@ export default function InstallBanner() {
   const { isInstallable, install } = useInstallPrompt();
   const [dismissed, setDismissed] = useState(false);
 
-  if (!isInstallable || dismissed) return null;
+  if (!isInstallable || dismissed) {return null;}
 
   return (
     <div className={styles.banner} id="install-banner">

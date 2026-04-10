@@ -81,7 +81,7 @@ export default function TimelinePage({
   );
 
   useEffect(() => {
-    if (!params || !user) return;
+    if (!params || !user) {return;}
     const supabase = supabaseRef.current;
 
     const load = async () => {
@@ -140,7 +140,7 @@ export default function TimelinePage({
 
   // Realtime subscription
   useEffect(() => {
-    if (!params) return;
+    if (!params) {return;}
     const supabase = supabaseRef.current;
 
     const channel = supabase
@@ -170,7 +170,7 @@ export default function TimelinePage({
 
             const photo = { ...data, uploader: uploaderProfile || undefined };
             setPhotos((prev) => {
-              if (prev.some((p) => p.id === photo.id)) return prev;
+              if (prev.some((p) => p.id === photo.id)) {return prev;}
               const newPhotos = [photo, ...prev];
               newPhotos.sort(
                 (a, b) =>
@@ -203,7 +203,7 @@ export default function TimelinePage({
 
   // Infinite scroll
   useEffect(() => {
-    if (!observerRef.current || !hasMore || loadingMore) return;
+    if (!observerRef.current || !hasMore || loadingMore) {return;}
 
     const observer = new IntersectionObserver(
       async (entries) => {
@@ -236,7 +236,7 @@ export default function TimelinePage({
   const handleDeletePhoto = async (photoId: string) => {
     const supabase = supabaseRef.current;
     const photo = photos.find((p) => p.id === photoId);
-    if (!photo) return;
+    if (!photo) {return;}
 
     // Delete from storage
     if (photo.storage_path) {
@@ -287,7 +287,7 @@ export default function TimelinePage({
     );
   }
 
-  if (!timeline) return null;
+  if (!timeline) {return null;}
 
   return (
     <>
@@ -405,7 +405,6 @@ export default function TimelinePage({
       {selectedPhoto && params && (
         <PhotoLightbox
           photo={selectedPhoto}
-          timelineId={params.id}
           onClose={() => setSelectedPhoto(null)}
           onDelete={handleDeletePhoto}
           canDelete={
