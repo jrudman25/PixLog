@@ -197,6 +197,12 @@ export default function PhotoUploader({
     setUploading(false);
 
     if (anySucceeded) {
+      // Intentionally ping the root timeline context to aggressively override sort metadata metrics
+      await supabase
+        .from('timelines')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', timelineId);
+
       setTimeout(() => {
         onUploaded();
       }, 500);

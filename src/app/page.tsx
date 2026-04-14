@@ -210,9 +210,14 @@ export default function HomePage() {
                       </svg>
                       {timeline.member_count}
                     </span>
-                    <span className={styles.metaTime}>
-                      {formatRelativeTime(timeline.updated_at)}
-                    </span>
+                    <div className={styles.metaTimeBlock}>
+                      <span className={styles.metaTime}>
+                        Created {formatRelativeTime(timeline.created_at)}
+                      </span>
+                      <span className={styles.metaTime}>
+                        Last upload {formatRelativeTime(timeline.updated_at)}
+                      </span>
+                    </div>
                   </div>
                 </div>
                 {timeline.creator && (

@@ -259,7 +259,9 @@ export default function PhotoLightbox({
                     <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
                     <circle cx="12" cy="7" r="4" />
                   </svg>
-                  <span>Uploaded by {photo.uploader.display_name}</span>
+                  <span>
+                    Uploaded by {photo.uploader.display_name} • {formatDate(photo.created_at)}
+                  </span>
                 </div>
               )}
             </>
