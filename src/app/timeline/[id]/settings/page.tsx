@@ -8,6 +8,7 @@ import { useToast } from '@/components/providers/ToastProvider';
 import BottomNav from '@/components/layout/BottomNav';
 import type { Timeline, TimelineMember, Profile } from '@/types';
 import { getInitials } from '@/lib/utils';
+import JSZip from 'jszip';
 import styles from './settings.module.css';
 
 export default function TimelineSettingsPage() {
@@ -19,6 +20,8 @@ export default function TimelineSettingsPage() {
   const [searchResults, setSearchResults] = useState<Profile[]>([]);
   const [searching, setSearching] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState<{ current: number; total: number } | null>(null);
   const [origin, setOrigin] = useState('');
   const router = useRouter();
   const { user } = useAuth();
@@ -166,6 +169,88 @@ export default function TimelineSettingsPage() {
 
     setMembers((prev) => prev.filter((m) => m.id !== memberId));
     showToast('Member removed', 'success');
+  };
+
+  const downloadTimelineZip = async () => {
+    if (!params || !timeline) {return;}
+    setIsDownloading(true);
+    setDownloadProgress({ current: 0, total: 100 });
+
+    try {
+      const supabase = supabaseRef.current;
+      const { data: photos } = await supabase
+        .from('photos')
+        .select('storage_path, original_filename')
+        .eq('timeline_id', params.id);
+
+      if (!photos || photos.length === 0) {
+        showToast('No photos to download', 'info');
+        setIsDownloading(false);
+        setDownloadProgress(null);
+        return;
+      }
+
+      setDownloadProgress({ current: 0, total: photos.length });
+
+      const zip = new JSZip();
+      let completed = 0;
+      const usedNames = new Set<string>();
+
+      const getUniqueName = (filename: string) => {
+        let name = filename;
+        let counter = 1;
+        const parts = filename.split('.');
+        const ext = parts.length > 1 ? `.${parts.pop()}` : '';
+        const base = parts.join('.');
+        while (usedNames.has(name)) {
+          name = `${base}_${counter}${ext}`;
+          counter++;
+        }
+        usedNames.add(name);
+        return name;
+      };
+
+      const CONCURRENCY = 4;
+      const downloadBatch = async (batch: typeof photos) => {
+        const promises = batch.map(async (p) => {
+          try {
+            const res = await fetch(p.storage_path);
+            if (!res.ok) {throw new Error(`Failed to fetch ${p.storage_path}`);}
+            const blob = await res.blob();
+            const safeName = getUniqueName(p.original_filename);
+            zip.file(safeName, blob);
+          } catch (e) {
+            console.error(e);
+          } finally {
+            completed++;
+            setDownloadProgress({ current: completed, total: photos.length });
+          }
+        });
+        await Promise.all(promises);
+      };
+
+      for (let i = 0; i < photos.length; i += CONCURRENCY) {
+        await downloadBatch(photos.slice(i, i + CONCURRENCY));
+      }
+
+      const content = await zip.generateAsync({ type: 'blob' });
+      const downloadUrl = URL.createObjectURL(content);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `${timeline.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_photos.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(downloadUrl);
+      
+      showToast('Download complete!', 'success');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to download timeline';
+      showToast(message, 'error');
+    } finally {
+      setIsDownloading(false);
+      setDownloadProgress(null);
+    }
   };
 
   const leaveTimeline = async () => {
@@ -371,6 +456,28 @@ export default function TimelineSettingsPage() {
               </div>
             ))}
           </div>
+        </section>
+
+      {/* Export section */}
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>Export</h2>
+          <button
+            className="btn btn-secondary btn-full"
+            onClick={downloadTimelineZip}
+            disabled={isDownloading}
+            type="button"
+          >
+            {isDownloading && downloadProgress ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span className="spinner spinner-sm" />
+                <span>
+                  Packing {downloadProgress.current} of {downloadProgress.total}...
+                </span>
+              </div>
+            ) : (
+              'Download All Photos (.zip)'
+            )}
+          </button>
         </section>
 
         {/* Danger zone */}
