@@ -34,6 +34,8 @@ export async function extractExif(file: File): Promise<ExifData> {
         'ModifyDate',
         'GPSLatitude',
         'GPSLongitude',
+        'GPSLatitudeRef',
+        'GPSLongitudeRef',
         'ImageWidth',
         'ImageHeight',
         'ExifImageWidth',

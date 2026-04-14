@@ -16,8 +16,10 @@ export default function HomePage() {
   const [fetching, setFetching] = useState(true);
   const router = useRouter();
   const supabaseRef = useRef(createClient());
+  const mounted = useRef(true);
 
   useEffect(() => {
+    mounted.current = true;
     if (loading) {return;}
     if (!user) {
       router.push('/auth/login');
@@ -29,7 +31,6 @@ export default function HomePage() {
     }
 
     const supabase = supabaseRef.current;
-    let isActive = true;
 
     const fetchTimelines = async () => {
       try {
@@ -40,7 +41,7 @@ export default function HomePage() {
           .eq('user_id', user.id);
 
         if (!memberships?.length) {
-          if (isActive) { setFetching(false); }
+          if (mounted.current) { setFetching(false); }
           return;
         }
 
@@ -56,7 +57,7 @@ export default function HomePage() {
           // Get counts and creator info for each timeline
           const timelinesWithMeta: TimelineWithMeta[] = await Promise.all(
             timelineData.map(async (t) => {
-              const [{ count: memberCount }, { count: photoCount }, { data: creator }] =
+              const [{ count: memberCount }, { count: photoCount }, { data: creator }, { data: latestPhoto }] =
                 await Promise.all([
                   supabase
                     .from('timeline_members')
@@ -71,6 +72,13 @@ export default function HomePage() {
                     .select('id, username, display_name, avatar_url')
                     .eq('id', t.created_by)
                     .single(),
+                  supabase
+                    .from('photos')
+                    .select('thumbnail_path, storage_path')
+                    .eq('timeline_id', t.id)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .maybeSingle(),
                 ]);
 
               return {
@@ -78,18 +86,19 @@ export default function HomePage() {
                 creator: creator || undefined,
                 member_count: memberCount || 0,
                 photo_count: photoCount || 0,
+                cover_image_url: t.cover_image_url || latestPhoto?.thumbnail_path || latestPhoto?.storage_path || null,
               };
             })
           );
 
-          if (isActive) {
+          if (mounted.current) {
             setTimelines(timelinesWithMeta);
           }
         }
       } catch (err) {
         console.error('Failed to fetch timelines:', err);
       } finally {
-        if (isActive) {
+        if (mounted.current) {
           setFetching(false);
         }
       }
@@ -98,7 +107,7 @@ export default function HomePage() {
     fetchTimelines();
 
     return () => {
-      isActive = false;
+      mounted.current = false;
     };
   }, [user, profile, loading, router]);
 

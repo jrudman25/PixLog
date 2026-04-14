@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import BottomNav from '@/components/layout/BottomNav';
 import { getInitials } from '@/lib/utils';
+import pkg from '../../../package.json';
 import styles from './profile.module.css';
 
 export default function ProfilePage() {
@@ -60,6 +61,10 @@ export default function ProfilePage() {
                 year: 'numeric',
               })}
             </span>
+          </div>
+          <div className={styles.infoRow}>
+            <span className={styles.infoLabel}>App Version</span>
+            <span className={styles.infoValue}>v{pkg.version}</span>
           </div>
         </div>
 

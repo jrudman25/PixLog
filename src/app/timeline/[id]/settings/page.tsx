@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useToast } from '@/components/providers/ToastProvider';
@@ -10,12 +10,8 @@ import type { Timeline, TimelineMember, Profile } from '@/types';
 import { getInitials } from '@/lib/utils';
 import styles from './settings.module.css';
 
-export default function TimelineSettingsPage({
-  params: paramsPromise,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const [params, setParams] = useState<{ id: string } | null>(null);
+export default function TimelineSettingsPage() {
+  const params = useParams<{ id: string }>();
   const [timeline, setTimeline] = useState<Timeline | null>(null);
   const [members, setMembers] = useState<TimelineMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,10 +26,6 @@ export default function TimelineSettingsPage({
   const supabaseRef = useRef(createClient());
 
   const isCreator = timeline?.created_by === user?.id;
-
-  useEffect(() => {
-    paramsPromise.then(setParams);
-  }, [paramsPromise]);
 
   useEffect(() => {
     setOrigin(window.location.origin);
