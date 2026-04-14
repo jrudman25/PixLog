@@ -18,6 +18,13 @@ export default function CommentList({ photoId }: CommentListProps) {
   const [submitting, setSubmitting] = useState(false);
   const { user } = useAuth();
   const supabaseRef = useRef(createClient());
+  const mounted = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   const fetchComments = useCallback(async () => {
     const supabase = supabaseRef.current;
@@ -36,14 +43,18 @@ export default function CommentList({ photoId }: CommentListProps) {
         .in('id', userIds);
       const profileMap = new Map((profiles || []).map((p) => [p.id, p]));
 
-      setComments(
-        data.map((c) => ({
-          ...c,
-          profile: profileMap.get(c.user_id) || undefined,
-        }))
-      );
+      if (mounted.current) {
+        setComments(
+          data.map((c) => ({
+            ...c,
+            profile: profileMap.get(c.user_id) || undefined,
+          }))
+        );
+      }
     }
-    setLoading(false);
+    if (mounted.current) {
+      setLoading(false);
+    }
   }, [photoId]);
 
   useEffect(() => {
@@ -86,15 +97,18 @@ export default function CommentList({ photoId }: CommentListProps) {
 
     if (!error) {
       setNewComment('');
-      await fetchComments();
     }
 
-    setSubmitting(false);
+    if (mounted.current) {
+      setSubmitting(false);
+    }
   };
 
   const handleDelete = async (commentId: string) => {
     await supabaseRef.current.from('comments').delete().eq('id', commentId);
-    setComments((prev) => prev.filter((c) => c.id !== commentId));
+    if (mounted.current) {
+      setComments((prev) => prev.filter((c) => c.id !== commentId));
+    }
   };
 
   if (loading) {

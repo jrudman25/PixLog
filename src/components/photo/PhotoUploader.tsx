@@ -56,9 +56,19 @@ export default function PhotoUploader({
     if (!user || items.length === 0) {return;}
     setUploading(true);
 
-    for (let i = 0; i < items.length; i++) {
+    const pendingIndices = items
+      .map((item, index) => ({ item, index }))
+      .filter(({ item }) => item.status !== 'done')
+      .map(({ index }) => index);
+
+    const CONCURRENCY = 3;
+    let currentIndex = 0;
+    let anySucceeded = false;
+
+    const processNext = async (): Promise<void> => {
+      if (currentIndex >= pendingIndices.length) {return;}
+      const i = pendingIndices[currentIndex++];
       const item = items[i];
-      if (item.status === 'done') {continue;}
 
       setItems((prev) =>
         prev.map((it, idx) =>
@@ -160,6 +170,7 @@ export default function PhotoUploader({
             idx === i ? { ...it, status: 'done', progress: 100 } : it
           )
         );
+        anySucceeded = true;
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : 'Upload failed';
@@ -171,22 +182,25 @@ export default function PhotoUploader({
           )
         );
       }
-    }
 
+      // Recurse to process the next item
+      await processNext();
+    };
+
+    // Start concurrent workers
+    const workers = Array.from(
+      { length: Math.min(CONCURRENCY, pendingIndices.length) },
+      () => processNext()
+    );
+
+    await Promise.all(workers);
     setUploading(false);
 
-    // Check completion using functional setState to read latest state
-    setItems((current) => {
-      const allDone = current.every(
-        (it) => it.status === 'done' || it.status === 'error'
-      );
-      if (allDone) {
-        setTimeout(() => {
-          onUploaded();
-        }, 500);
-      }
-      return current;
-    });
+    if (anySucceeded) {
+      setTimeout(() => {
+        onUploaded();
+      }, 500);
+    }
   };
 
   return (

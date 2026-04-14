@@ -29,6 +29,7 @@ export default function HomePage() {
     }
 
     const supabase = supabaseRef.current;
+    let isActive = true;
 
     const fetchTimelines = async () => {
       try {
@@ -39,7 +40,7 @@ export default function HomePage() {
           .eq('user_id', user.id);
 
         if (!memberships?.length) {
-          setFetching(false);
+          if (isActive) { setFetching(false); }
           return;
         }
 
@@ -81,16 +82,24 @@ export default function HomePage() {
             })
           );
 
-          setTimelines(timelinesWithMeta);
+          if (isActive) {
+            setTimelines(timelinesWithMeta);
+          }
         }
       } catch (err) {
         console.error('Failed to fetch timelines:', err);
       } finally {
-        setFetching(false);
+        if (isActive) {
+          setFetching(false);
+        }
       }
     };
 
     fetchTimelines();
+
+    return () => {
+      isActive = false;
+    };
   }, [user, profile, loading, router]);
 
   if (loading || fetching) {
