@@ -23,6 +23,8 @@ export default function PhotoLightbox({
   canDelete,
 }: PhotoLightboxProps) {
   const [editing, setEditing] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [takenAt, setTakenAt] = useState(
     new Date(photo.taken_at).toISOString().slice(0, 16)
   );
@@ -61,6 +63,26 @@ export default function PhotoLightbox({
     setSaving(false);
   };
 
+  const handleDownload = async () => {
+    try {
+      setDownloading(true);
+      const res = await fetch(photo.storage_path);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = photo.original_filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (_e) {
+      showToast('Failed to download photo', 'error');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <>
       <div className="overlay" onClick={onClose} />
@@ -78,6 +100,23 @@ export default function PhotoLightbox({
             </svg>
           </button>
           <div className={styles.headerActions}>
+            <button
+              className="btn btn-ghost btn-icon"
+              onClick={handleDownload}
+              disabled={downloading}
+              type="button"
+              title="Download Photo"
+            >
+              {downloading ? (
+                <span className="spinner" style={{ width: '16px', height: '16px', borderWidth: '2px' }} />
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+              )}
+            </button>
             {canEdit && (
               <button
                 className="btn btn-ghost btn-icon"
@@ -118,10 +157,17 @@ export default function PhotoLightbox({
 
         {/* Image */}
         <div className={styles.imageContainer}>
+          {!imageLoaded && (
+            <div className={styles.imageLoader}>
+              <span className="spinner spinner-lg" />
+            </div>
+          )}
           <img
             src={photo.storage_path}
             alt={photo.caption || 'Photo'}
             className={styles.image}
+            onLoad={() => setImageLoaded(true)}
+            style={{ opacity: imageLoaded ? 1 : 0 }}
           />
         </div>
 

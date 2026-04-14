@@ -33,12 +33,26 @@
   min-height: 200px;
   max-height: 60vh;
   overflow: hidden;
+  position: relative;
+}
+
+.imageLoader {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
 }
 
 .image {
   width: 100%;
   max-height: 60vh;
   object-fit: contain;
+  transition: opacity var(--transition-base) ease-out;
+  z-index: 2;
 }
 
 .metaSection {
