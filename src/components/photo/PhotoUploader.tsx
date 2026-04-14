@@ -155,7 +155,7 @@ export default function PhotoUploader({
           storage_path: publicUrl.publicUrl,
           thumbnail_path: thumbUrl,
           original_filename: item.file.name,
-          taken_at: exif.takenAt?.toISOString() || new Date().toISOString(),
+          taken_at: exif.takenAt?.toISOString() || new Date(item.file.lastModified).toISOString() || new Date().toISOString(),
           latitude: exif.latitude,
           longitude: exif.longitude,
           location_name: locationName,

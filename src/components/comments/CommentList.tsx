@@ -21,39 +21,48 @@ export default function CommentList({ photoId }: CommentListProps) {
   const mounted = useRef(true);
 
   useEffect(() => {
+    mounted.current = true;
     return () => {
       mounted.current = false;
     };
   }, []);
 
   const fetchComments = useCallback(async () => {
-    const supabase = supabaseRef.current;
-    const { data } = await supabase
-      .from('comments')
-      .select('*')
-      .eq('photo_id', photoId)
-      .order('created_at', { ascending: true });
-
-    if (data) {
-      // Fetch profiles for comment authors
-      const userIds = [...new Set(data.map((c) => c.user_id))];
-      const { data: profiles } = await supabase
-        .from('profiles')
+    try {
+      const supabase = supabaseRef.current;
+      const { data } = await supabase
+        .from('comments')
         .select('*')
-        .in('id', userIds);
-      const profileMap = new Map((profiles || []).map((p) => [p.id, p]));
+        .eq('photo_id', photoId)
+        .order('created_at', { ascending: true });
 
-      if (mounted.current) {
-        setComments(
-          data.map((c) => ({
-            ...c,
-            profile: profileMap.get(c.user_id) || undefined,
-          }))
-        );
+      if (data) {
+        // Fetch profiles for comment authors
+        const userIds = [...new Set(data.map((c) => c.user_id))];
+        let profileMap = new Map();
+        if (userIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('*')
+            .in('id', userIds);
+          profileMap = new Map((profiles || []).map((p) => [p.id, p]));
+        }
+
+        if (mounted.current) {
+          setComments(
+            data.map((c) => ({
+              ...c,
+              profile: profileMap.get(c.user_id) || undefined,
+            }))
+          );
+        }
       }
-    }
-    if (mounted.current) {
-      setLoading(false);
+    } catch (err) {
+      console.error('Failed to fetch comments:', err);
+    } finally {
+      if (mounted.current) {
+        setLoading(false);
+      }
     }
   }, [photoId]);
 
@@ -178,6 +187,7 @@ export default function CommentList({ photoId }: CommentListProps) {
           value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
           id="comment-input"
+          maxLength={280}
         />
         <button
           type="submit"
