@@ -41,7 +41,7 @@ export default function HomePage() {
           .eq('user_id', user.id);
 
         if (!memberships?.length) {
-          if (mounted.current) { setFetching(false); }
+          setFetching(false);
           return;
         }
 
@@ -98,9 +98,7 @@ export default function HomePage() {
       } catch (err) {
         console.error('Failed to fetch timelines:', err);
       } finally {
-        if (mounted.current) {
-          setFetching(false);
-        }
+        setFetching(false);
       }
     };
 

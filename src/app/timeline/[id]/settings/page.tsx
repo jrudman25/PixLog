@@ -92,10 +92,11 @@ export default function TimelineSettingsPage() {
     if (!searchQuery.trim()) {return;}
     setSearching(true);
 
+    const cleanSearch = searchQuery.replace('@', '').trim();
     const { data } = await supabaseRef.current
       .from('profiles')
       .select('*')
-      .ilike('username', `%${searchQuery.trim()}%`)
+      .or(`username.ilike.%${cleanSearch}%,display_name.ilike.%${cleanSearch}%`)
       .limit(10);
 
     if (data) {

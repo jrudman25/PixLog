@@ -20,6 +20,16 @@ export const metadata: Metadata = {
     statusBarStyle: 'black-translucent',
     title: 'PixLog',
   },
+  icons: {
+    icon: '/icons/icon-192.png',
+    apple: '/icons/icon-192.png',
+  },
+  openGraph: {
+    title: 'PixLog — Shared Photo Timelines',
+    description: 'Create collaborative photo timelines with friends.',
+    siteName: 'PixLog',
+    type: 'website',
+  },
 };
 
 export const viewport: Viewport = {
