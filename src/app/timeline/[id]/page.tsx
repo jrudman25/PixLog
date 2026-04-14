@@ -47,7 +47,7 @@ export default function TimelinePage({
       const supabase = supabaseRef.current;
       let query = supabase
         .from('photos')
-        .select('*')
+        .select('*, comments(count)')
         .eq('timeline_id', timelineId)
         .order('taken_at', { ascending: false })
         .order('created_at', { ascending: false })
@@ -71,6 +71,7 @@ export default function TimelinePage({
 
         return data.map((p) => ({
           ...p,
+          comment_count: p.comments?.[0]?.count || 0,
           uploader: profileMap.get(p.uploaded_by) || undefined,
         }));
       }
@@ -157,7 +158,7 @@ export default function TimelinePage({
           // Fetch the full photo with uploader profile
           const { data } = await supabase
             .from('photos')
-            .select('*')
+            .select('*, comments(count)')
             .eq('id', payload.new.id)
             .single();
 
@@ -168,7 +169,11 @@ export default function TimelinePage({
               .eq('id', data.uploaded_by)
               .single();
 
-            const photo = { ...data, uploader: uploaderProfile || undefined };
+            const photo = {
+              ...data,
+              comment_count: data.comments?.[0]?.count || 0,
+              uploader: uploaderProfile || undefined,
+            };
             setPhotos((prev) => {
               if (prev.some((p) => p.id === photo.id)) {return prev;}
               const newPhotos = [photo, ...prev];
@@ -192,6 +197,28 @@ export default function TimelinePage({
         },
         (payload) => {
           setPhotos((prev) => prev.filter((p) => p.id !== payload.old.id));
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'comments',
+        },
+        (payload) => {
+          const photoId = payload.eventType === 'DELETE' ? payload.old.photo_id : payload.new?.photo_id;
+          if (!photoId) { return; }
+          
+          setPhotos((prev) =>
+            prev.map((p) => {
+              if (p.id === photoId) {
+                const countDelta = payload.eventType === 'INSERT' ? 1 : payload.eventType === 'DELETE' ? -1 : 0;
+                return { ...p, comment_count: Math.max(0, (p.comment_count || 0) + countDelta) };
+              }
+              return p;
+            })
+          );
         }
       )
       .subscribe();

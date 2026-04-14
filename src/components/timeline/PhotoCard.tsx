@@ -25,7 +25,15 @@ export default function PhotoCard({ photo, onClick, style }: PhotoCardProps) {
         className={styles.imageContainer}
         style={{ aspectRatio: photo.width && photo.height ? `${photo.width}/${photo.height}` : '4/3' }}
       >
-        <img src={imageUrl} alt={photo.caption || 'Photo'} className={styles.image} loading="lazy" />
+        <img src={imageUrl} alt={photo.caption || 'Photo'} className={styles.image} loading="lazy" style={{ objectPosition: 'center top' }} />
+        {!!(photo.comment_count && photo.comment_count > 0) && (
+          <div className={styles.commentBadge}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+            <span>{photo.comment_count}</span>
+          </div>
+        )}
       </div>
       <div className={styles.info}>
         <div className={styles.infoLeft}>
