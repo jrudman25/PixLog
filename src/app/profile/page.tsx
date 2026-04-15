@@ -14,7 +14,9 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!loading && (!user || !profile)) {
-      router.push('/auth/login');
+      if (typeof window !== 'undefined') {
+        window.location.href = '/auth/login';
+      }
     }
   }, [loading, user, profile, router]);
 
