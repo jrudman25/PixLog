@@ -1,5 +1,5 @@
 import React from 'react';
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import CommentList from '../CommentList';
 
@@ -32,5 +32,8 @@ describe('CommentList', () => {
     render(<CommentList photoId="test-photo-id" />);
     // Initial state is loading
     expect(document.querySelector('.spinner')).toBeInTheDocument();
+    
+    // Wait for component to settle avoiding act(...) warnings
+    await screen.findByText(/No comments yet/i);
   });
 });

@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import BottomNav from '@/components/layout/BottomNav';
@@ -11,7 +12,13 @@ export default function ProfilePage() {
   const { user, profile, loading, signOut } = useAuth();
   const router = useRouter();
 
-  if (loading) {
+  useEffect(() => {
+    if (!loading && (!user || !profile)) {
+      window.location.href = '/auth/login';
+    }
+  }, [loading, user, profile]);
+
+  if (loading || !user || !profile) {
     return (
       <>
         <div className={styles.loadingContainer}>
@@ -20,11 +27,6 @@ export default function ProfilePage() {
         <BottomNav />
       </>
     );
-  }
-
-  if (!user || !profile) {
-    router.push('/auth/login');
-    return null;
   }
 
   const handleSignOut = async () => {

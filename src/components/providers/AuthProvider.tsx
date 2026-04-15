@@ -85,7 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error('Error fetching session:', err);
         if (mounted) { setUser(null); }
       } finally {
-        if (mounted) { setLoading(false); }
+        setLoading(false);
       }
     };
 
@@ -104,7 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (err) {
         console.error('Error during auth state change:', err);
       } finally {
-        if (mounted) { setLoading(false); }
+        setLoading(false);
       }
     });
 
