@@ -54,25 +54,6 @@ export async function proxy(request: NextRequest) {
     return redirectResponse;
   }
 
-  // Redirect logged-in users away from auth pages
-  const authPaths = ['/auth/login', '/auth/signup'];
-  const isAuthPage = authPaths.some((path) =>
-    request.nextUrl.pathname.startsWith(path)
-  );
-
-  if (isAuthPage && user) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/';
-    const redirectResponse = NextResponse.redirect(url);
-    
-    // Pass refreshed cookies from supabaseResponse to redirectResponse
-    supabaseResponse.cookies.getAll().forEach(({ name, value, ...options }) => {
-      redirectResponse.cookies.set(name, value, options);
-    });
-    
-    return redirectResponse;
-  }
-
   return supabaseResponse;
 }
 
