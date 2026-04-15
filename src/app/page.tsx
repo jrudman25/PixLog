@@ -57,8 +57,9 @@ export default function HomePage() {
 
         if (timelineData) {
           // Get counts and creator info for each timeline
-          const timelinesWithMeta: TimelineWithMeta[] = await Promise.all(
-            timelineData.map(async (t) => {
+          const timelinesWithMeta: TimelineWithMeta[] = [];
+          for (const t of timelineData) {
+            try {
               const [{ count: memberCount }, { count: photoCount }, { data: creator }, { data: latestPhoto }] =
                 await Promise.all([
                   supabase
@@ -83,15 +84,24 @@ export default function HomePage() {
                     .maybeSingle(),
                 ]);
 
-              return {
+              timelinesWithMeta.push({
                 ...t,
                 creator: creator || undefined,
                 member_count: memberCount || 0,
                 photo_count: photoCount || 0,
                 cover_image_url: t.cover_image_url || latestPhoto?.thumbnail_path || latestPhoto?.storage_path || null,
-              };
-            })
-          );
+              });
+            } catch (timelineErr) {
+              console.error(`Failed to process timeline ${t.id}:`, timelineErr);
+              // Push it without meta if it fails, so it doesn't break the entire feed
+              timelinesWithMeta.push({
+                ...t,
+                member_count: 0,
+                photo_count: 0,
+                cover_image_url: t.cover_image_url || null,
+              });
+            }
+          }
 
           if (mounted.current) {
             setTimelines(timelinesWithMeta);
