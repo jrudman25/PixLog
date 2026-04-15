@@ -20,15 +20,17 @@ export default function HomePage() {
 
   useEffect(() => {
     mounted.current = true;
-    if (loading) {return;}
-    if (!user) {
-      if (typeof window !== 'undefined') {
-        window.location.href = '/auth/login?refresh=1';
-      }
+    if (loading) {
       return;
     }
-    if (user && !profile?.username) {
-      router.push('/profile/setup');
+
+    if (!user) {
+      router.replace('/auth/login?refresh=1');
+      return;
+    }
+
+    if (!profile) {
+      router.replace('/profile/setup');
       return;
     }
 

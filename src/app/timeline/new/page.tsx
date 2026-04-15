@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -14,13 +14,44 @@ export default function NewTimelinePage() {
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const { showToast } = useToast();
   const supabaseRef = useRef(createClient());
 
+  useEffect(() => {
+    if (authLoading) {
+      return;
+    }
+
+    if (!user) {
+      router.replace('/auth/login?refresh=1');
+      return;
+    }
+
+    if (!profile) {
+      router.replace('/profile/setup');
+    }
+  }, [authLoading, user, profile, router]);
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) {return;}
+
+    if (authLoading) {
+      return;
+    }
+
+    if (!user) {
+      showToast('Please sign in before creating a timeline.', 'error');
+      router.push('/auth/login?refresh=1');
+      return;
+    }
+
+    if (!profile) {
+      showToast('Finish setting up your profile before creating a timeline.', 'error');
+      router.push('/profile/setup');
+      return;
+    }
+
     setLoading(true);
 
     const inviteCode = generateInviteCode();
@@ -43,15 +74,36 @@ export default function NewTimelinePage() {
     }
 
     // Add creator as a member
-    await supabaseRef.current.from('timeline_members').insert({
+    const { error: membershipError } = await supabaseRef.current
+      .from('timeline_members')
+      .insert({
       timeline_id: timeline.id,
       user_id: user.id,
       role: 'creator',
     });
 
+    if (membershipError) {
+      await supabaseRef.current.from('timelines').delete().eq('id', timeline.id);
+      showToast(membershipError.message, 'error');
+      setLoading(false);
+      return;
+    }
+
     showToast('Timeline created!', 'success');
     router.push(`/timeline/${timeline.id}`);
+    router.refresh();
   };
+
+  if (authLoading || !user || !profile) {
+    return (
+      <>
+        <div className="page-container">
+          <div className="spinner spinner-lg" />
+        </div>
+        <BottomNav />
+      </>
+    );
+  }
 
   return (
     <>

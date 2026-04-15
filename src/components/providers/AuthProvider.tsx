@@ -37,6 +37,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const supabaseRef = useRef(createClient());
+  const mountedRef = useRef(true);
+  const requestIdRef = useRef(0);
 
   const fetchProfile = useCallback(async (userId: string) => {
     try {
@@ -44,27 +46,72 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
-      
+        .maybeSingle();
+
       if (error) {
         console.error('Failed to fetch profile:', error);
+        return null;
       }
-      setProfile(data || null);
+
+      return data || null;
     } catch (err) {
       console.error('Network exception fetching profile:', err);
-      setProfile(null);
+      return null;
     }
   }, []);
 
+  const syncAuthState = useCallback(
+    async (currentUser: User | null, showLoading: boolean) => {
+      const requestId = ++requestIdRef.current;
+
+      if (mountedRef.current) {
+        if (showLoading) {
+          setLoading(true);
+        }
+
+        setUser(currentUser);
+
+        if (!currentUser) {
+          setProfile(null);
+        } else {
+          setProfile((currentProfile) =>
+            currentProfile?.id === currentUser.id ? currentProfile : null
+          );
+        }
+      }
+
+      if (!currentUser) {
+        if (mountedRef.current && requestId === requestIdRef.current) {
+          setLoading(false);
+        }
+        return;
+      }
+
+      const nextProfile = await fetchProfile(currentUser.id);
+
+      if (!mountedRef.current || requestId !== requestIdRef.current) {
+        return;
+      }
+
+      setProfile(nextProfile);
+      setLoading(false);
+    },
+    [fetchProfile]
+  );
+
   const refreshProfile = useCallback(async () => {
     if (user) {
-      await fetchProfile(user.id);
+      const nextProfile = await fetchProfile(user.id);
+
+      if (mountedRef.current) {
+        setProfile(nextProfile);
+      }
     }
   }, [user, fetchProfile]);
 
   useEffect(() => {
     const supabase = supabaseRef.current;
-    let mounted = true;
+    mountedRef.current = true;
 
     const getSession = async () => {
       try {
@@ -72,47 +119,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           data: { session },
           error,
         } = await supabase.auth.getSession();
-        
-        if (error) { throw error; }
-        
-        const currentUser = session?.user ?? null;
-        if (mounted) { setUser(currentUser); }
 
-        if (currentUser) {
-          await fetchProfile(currentUser.id);
+        if (error) {
+          throw error;
         }
+
+        await syncAuthState(session?.user ?? null, true);
       } catch (err) {
         console.error('Error fetching session:', err);
-        if (mounted) { setUser(null); }
-      } finally {
-        setLoading(false);
+
+        if (mountedRef.current) {
+          setUser(null);
+          setProfile(null);
+          setLoading(false);
+        }
       }
     };
 
-    getSession();
+    void getSession();
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      try {
-        const currentUser = session?.user ?? null;
-        if (mounted) { setUser(currentUser); }
-
-        if (currentUser) {
-          await fetchProfile(currentUser.id);
-        } else if (mounted) { setProfile(null); }
-      } catch (err) {
-        console.error('Error during auth state change:', err);
-      } finally {
-        setLoading(false);
-      }
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      window.setTimeout(() => {
+        void syncAuthState(
+          session?.user ?? null,
+          event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED'
+        );
+      }, 0);
     });
 
     return () => {
-      mounted = false;
+      mountedRef.current = false;
       subscription.unsubscribe();
     };
-  }, [fetchProfile]);
+  }, [syncAuthState]);
 
   const signOut = async () => {
     await supabaseRef.current.auth.signOut();

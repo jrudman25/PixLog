@@ -13,10 +13,17 @@ export default function ProfilePage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && (!user || !profile)) {
-      if (typeof window !== 'undefined') {
-        window.location.href = '/auth/login?refresh=1';
-      }
+    if (loading) {
+      return;
+    }
+
+    if (!user) {
+      router.replace('/auth/login?refresh=1');
+      return;
+    }
+
+    if (!profile) {
+      router.replace('/profile/setup');
     }
   }, [loading, user, profile, router]);
 

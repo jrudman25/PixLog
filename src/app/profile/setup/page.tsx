@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -13,14 +13,31 @@ export default function ProfileSetupPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const { user, refreshProfile } = useAuth();
+  const { user, loading: authLoading, refreshProfile } = useAuth();
   const { showToast } = useToast();
   const supabaseRef = useRef(createClient());
+
+  useEffect(() => {
+    if (authLoading) {
+      return;
+    }
+
+    if (!user) {
+      router.replace('/auth/login?refresh=1');
+    }
+  }, [authLoading, user, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
+
+    if (!user) {
+      setError('Please sign in before setting up your profile.');
+      setLoading(false);
+      router.push('/auth/login?refresh=1');
+      return;
+    }
 
     const sanitized = username.toLowerCase().replace(/[^a-z0-9_]/g, '');
 
@@ -41,7 +58,7 @@ export default function ProfileSetupPage() {
       .from('profiles')
       .select('id')
       .eq('username', sanitized)
-      .single();
+      .maybeSingle();
 
     if (existing && existing.id !== user?.id) {
       setError('Username is already taken');
@@ -66,6 +83,14 @@ export default function ProfileSetupPage() {
     router.push('/');
     router.refresh();
   };
+
+  if (authLoading || !user) {
+    return (
+      <div className={styles.container}>
+        <div className="spinner spinner-lg" />
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>
