@@ -14,9 +14,9 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!loading && (!user || !profile)) {
-      window.location.href = '/auth/login';
+      router.push('/auth/login');
     }
-  }, [loading, user, profile]);
+  }, [loading, user, profile, router]);
 
   if (loading || !user || !profile) {
     return (

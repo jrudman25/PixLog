@@ -22,9 +22,7 @@ export default function HomePage() {
     mounted.current = true;
     if (loading) {return;}
     if (!user) {
-      if (typeof window !== 'undefined') {
-        window.location.href = '/auth/login';
-      }
+      router.push('/auth/login');
       return;
     }
     if (user && !profile?.username) {

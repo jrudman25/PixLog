@@ -44,7 +44,14 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = '/auth/login';
     url.searchParams.set('redirect', request.nextUrl.pathname);
-    return NextResponse.redirect(url);
+    const redirectResponse = NextResponse.redirect(url);
+    
+    // Pass refreshed cookies from supabaseResponse to redirectResponse
+    supabaseResponse.cookies.getAll().forEach(({ name, value, ...options }) => {
+      redirectResponse.cookies.set(name, value, options);
+    });
+    
+    return redirectResponse;
   }
 
   // Redirect logged-in users away from auth pages
@@ -56,7 +63,14 @@ export async function proxy(request: NextRequest) {
   if (isAuthPage && user) {
     const url = request.nextUrl.clone();
     url.pathname = '/';
-    return NextResponse.redirect(url);
+    const redirectResponse = NextResponse.redirect(url);
+    
+    // Pass refreshed cookies from supabaseResponse to redirectResponse
+    supabaseResponse.cookies.getAll().forEach(({ name, value, ...options }) => {
+      redirectResponse.cookies.set(name, value, options);
+    });
+    
+    return redirectResponse;
   }
 
   return supabaseResponse;
