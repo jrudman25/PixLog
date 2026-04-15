@@ -46,6 +46,9 @@ export async function proxy(request: NextRequest) {
     url.searchParams.set('redirect', request.nextUrl.pathname);
     const redirectResponse = NextResponse.redirect(url);
     
+    // Prevent the browser from aggressively caching this redirect
+    redirectResponse.headers.set('Cache-Control', 'no-store, max-age=0');
+    
     // Pass refreshed cookies from supabaseResponse to redirectResponse
     supabaseResponse.cookies.getAll().forEach(({ name, value, ...options }) => {
       redirectResponse.cookies.set(name, value, options);
