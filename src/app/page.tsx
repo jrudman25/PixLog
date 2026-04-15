@@ -23,7 +23,7 @@ export default function HomePage() {
     if (loading) {return;}
     if (!user) {
       if (typeof window !== 'undefined') {
-        window.location.href = `/auth/login?cb=${Date.now()}`;
+        window.location.href = '/auth/login?refresh=1';
       }
       return;
     }
