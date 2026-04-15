@@ -23,6 +23,7 @@ export default function TimelinePage({
 }) {
   const [params, setParams] = useState<{ id: string } | null>(null);
   const [timeline, setTimeline] = useState<Timeline | null>(null);
+  const [sortBy, setSortBy] = useState<'taken_at' | 'created_at'>('taken_at');
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [members, setMembers] = useState<TimelineMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,18 +44,18 @@ export default function TimelinePage({
   }, [paramsPromise]);
 
   const fetchPhotos = useCallback(
-    async (timelineId: string, cursor?: string) => {
+    async (timelineId: string, cursor?: string, sortField: 'taken_at' | 'created_at' = 'taken_at') => {
       const supabase = supabaseRef.current;
       let query = supabase
         .from('photos')
         .select('*, comments(count)')
         .eq('timeline_id', timelineId)
-        .order('taken_at', { ascending: false })
+        .order(sortField, { ascending: false })
         .order('created_at', { ascending: false })
         .limit(PAGE_SIZE);
 
       if (cursor) {
-        query = query.lt('taken_at', cursor);
+        query = query.lt(sortField, cursor);
       }
 
       const { data } = await query;
@@ -108,7 +109,6 @@ export default function TimelinePage({
           .eq('timeline_id', params.id);
 
         if (membership) {
-          // Fetch profiles for members
           const memberUserIds = membership.map((m) => m.user_id);
           const { data: profiles } = await supabase
             .from('profiles')
@@ -125,10 +125,6 @@ export default function TimelinePage({
           setIsMember(membership.some((m) => m.user_id === user.id));
         }
 
-        // Fetch initial photos
-        const initialPhotos = await fetchPhotos(params.id);
-        setPhotos(initialPhotos);
-        setHasMore(initialPhotos.length === PAGE_SIZE);
       } catch (err) {
         console.error('Failed to load timeline:', err);
       } finally {
@@ -137,7 +133,30 @@ export default function TimelinePage({
     };
 
     load();
-  }, [params, user, router, fetchPhotos]);
+  }, [params, user, router]);
+
+  // Load photos based on sorting mechanism securely
+  useEffect(() => {
+    if (!params) {return;}
+    let mounted = true;
+
+    const loadPhotos = async () => {
+      setLoadingMore(true);
+      const initialPhotos = await fetchPhotos(params.id, undefined, sortBy);
+      if (mounted) {
+        setPhotos(initialPhotos);
+        setHasMore(initialPhotos.length === PAGE_SIZE);
+        setLoadingMore(false);
+      }
+    };
+
+    setPhotos([]);
+    loadPhotos();
+
+    return () => {
+      mounted = false;
+    };
+  }, [params, sortBy, fetchPhotos]);
 
   // Realtime subscription
   useEffect(() => {
@@ -179,8 +198,8 @@ export default function TimelinePage({
               const newPhotos = [photo, ...prev];
               newPhotos.sort(
                 (a, b) =>
-                  new Date(b.taken_at).getTime() -
-                  new Date(a.taken_at).getTime()
+                  new Date(b[sortBy] || b.taken_at).getTime() -
+                  new Date(a[sortBy] || a.taken_at).getTime()
               );
               return newPhotos;
             });
@@ -226,7 +245,7 @@ export default function TimelinePage({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [params]);
+  }, [params, sortBy]);
 
   // Infinite scroll
   useEffect(() => {
@@ -240,7 +259,8 @@ export default function TimelinePage({
           if (lastPhoto) {
             const morePhotos = await fetchPhotos(
               params.id,
-              lastPhoto.taken_at
+              lastPhoto[sortBy],
+              sortBy
             );
             setPhotos((prev) => [...prev, ...morePhotos]);
             setHasMore(morePhotos.length === PAGE_SIZE);
@@ -253,7 +273,7 @@ export default function TimelinePage({
 
     observer.observe(observerRef.current);
     return () => observer.disconnect();
-  }, [photos, hasMore, loadingMore, params, fetchPhotos]);
+  }, [photos, hasMore, loadingMore, params, fetchPhotos, sortBy]);
 
   const handlePhotoUploaded = () => {
     setShowUploader(false);
@@ -301,7 +321,7 @@ export default function TimelinePage({
   let currentGroup = '';
 
   photos.forEach((photo) => {
-    const group = getDateGroup(photo.taken_at);
+    const group = getDateGroup(photo[sortBy] || photo.taken_at);
     if (group !== currentGroup) {
       currentGroup = group;
       groupedPhotos.push({ date: group, photos: [photo] });
@@ -360,44 +380,65 @@ export default function TimelinePage({
           </Link>
         </div>
 
-        {/* Upload button */}
-        {isMember && (
-          <button
-            className={styles.uploadBtn}
-            onClick={() => setShowUploader(true)}
-            id="upload-btn"
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
+          {/* Upload button */}
+          {isMember ? (
+            <button
+              className={styles.uploadBtn}
+              onClick={() => setShowUploader(true)}
+              id="upload-btn"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+              Upload Photos
+            </button>
+          ) : (
+            <div />
+          )}
+
+          {/* Sort selection */}
+          <select
+            className="input input-sm"
+            style={{ width: 'auto', cursor: 'pointer', paddingRight: '2rem' }}
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as 'taken_at' | 'created_at')}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-              <polyline points="17 8 12 3 7 8" />
-              <line x1="12" y1="3" x2="12" y2="15" />
-            </svg>
-            Upload Photos
-          </button>
-        )}
+            <option value="taken_at">Sort by Date Taken</option>
+            <option value="created_at">Sort by Date Added</option>
+          </select>
+        </div>
 
         {/* Photo feed */}
         {photos.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon">📷</div>
-            <h2 className="empty-state-title">No photos yet</h2>
-            <p className="empty-state-text">
-              Upload your first photo to start building this timeline
-            </p>
-            {isMember && (
-              <button
-                className="btn btn-primary btn-lg"
-                onClick={() => setShowUploader(true)}
-                id="empty-upload-btn"
-              >
-                Upload Photos
-              </button>
-            )}
-          </div>
+          loadingMore ? (
+            <div className={styles.loadingContainer} style={{ minHeight: '20vh' }}>
+              <div className="spinner spinner-lg" />
+            </div>
+          ) : (
+            <div className="empty-state">
+              <div className="empty-state-icon">📷</div>
+              <h2 className="empty-state-title">No photos yet</h2>
+              <p className="empty-state-text">
+                Upload your first photo to start building this timeline
+              </p>
+              {isMember && (
+                <button
+                  className="btn btn-primary btn-lg"
+                  onClick={() => setShowUploader(true)}
+                  id="empty-upload-btn"
+                >
+                  Upload Photos
+                </button>
+              )}
+            </div>
+          )
         ) : (
           <div className={styles.feed}>
-            {groupedPhotos.map((group) => (
-              <div key={group.date} className={styles.dateGroup}>
+            {groupedPhotos.map((group, index) => (
+              <div key={`${group.date}-${index}`} className={styles.dateGroup}>
                 <div className="date-separator">
                   <div className="date-separator-line" />
                   <span className="date-separator-text">{group.date}</span>
